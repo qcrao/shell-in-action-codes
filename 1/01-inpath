@@ -2,51 +2,61 @@
 # inpath--Verifies that a specified program is either valid as is
 #   or can be found in the PATH directory list.
 
-in_path()
-{
-   # Given a command and the PATH, try to find the command. Returns
-   #   0 if found and executable, 1 if not. Note that this temporarily 
-   #   modifies the IFS (internal field separator) but restores it 
-   #   upon completion.
+in_path() {
+	# Given a command and the PATH, try to find the command. Returns
+	#   0 if found and executable, 1 if not. Note that this temporarily
+	#   modifies the IFS (internal field separator) but restores it
+	#   upon completion.
 
-   cmd=$1        ourpath=$2         result=1
-   oldIFS=$IFS   IFS=":"
+  # 这里第二个参数表示的路径带着 ":"
+  echo $1$1 $2 $1$1
 
-   for directory in “$ourpath”
-   do
-     if [ -x $directory/$cmd ] ; then
-       result=0      # if we're here, we found $cmd in $directory
-     fi
-   done
+	#ourpath 就是传给 inpath 函数的第二个参数
+	cmd=$1 ourpath=$2 result=1
+	oldIFS=$IFS IFS=":"
 
-   IFS=$oldIFS
-   return $result
- }
+  # 打印出 IFS
+	echo "$IFS" | cat -tve
 
- checkForCmdInPath()
- {
-   var=$1
+  # 这里打印的 $PATH 就已经是用分隔符切开后的样式
+	echo $1$1 $2 $1$1
 
-   if [ "$var" != "" ] ; then
-     if [ "${var:0:1}" = "/" ] ; then
-       if [ ! -x $var ] ; then
-         return 1
-       fi
-     elif !  in_path $var "$PATH" ; then
-       return 2
-     fi 
-   fi
+	for directory in $ourpath; do
+		echo "$directory/$cmd"
+    # 是否存在这个可执行文件
+		if [ -x $directory/$cmd ]; then
+			result=0 # if we're here, we found $cmd in $directory
+		fi
+	done
+
+	IFS=$oldIFS
+	return $result
 }
 
-if [ $# -ne 1 ] ; then
- echo "Usage: $0 command" >&2 ; exit 1
+checkForCmdInPath() {
+	var=$1
+
+	if [ "$var" != "" ]; then
+		if [ "${var:0:1}" = "/" ]; then
+			if [ ! -x $var ]; then
+				return 1
+			fi
+		elif ! in_path $var "$PATH"; then # 这里的 $var 用 $1 替换也可以
+			return 2
+		fi
+	fi
+}
+
+if [ $# -ne 1 ]; then
+	echo "Usage: $0 command" >&2
+	exit 1
 fi
 
-checkForCmdInPath "$1"
+checkForCmdInPath $1
 case $? in
- 0 ) echo "$1 found in PATH"                   ;;
- 1 ) echo "$1 not found or not executable"     ;;
- 2 ) echo "$1 not found in PATH"               ;;
+0) echo "$1 found in PATH" ;;
+1) echo "$1 not found or not executable" ;;
+2) echo "$1 not found in PATH" ;;
 esac
 
 exit 0
